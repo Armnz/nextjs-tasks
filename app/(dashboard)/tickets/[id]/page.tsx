@@ -1,58 +1,61 @@
-import { notFound } from "next/navigation"
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { notFound } from 'next/navigation';
 
-export const dynamicParams = true // default val = true
+export const dynamicParams = true; // default val = true
 
+export async function generateMetadata({ params }: {params: any}) {
+	const supabase = createServerComponentClient({ cookies });
 
-type Ticket = {
-  id: string;
+	const { data: ticket } = await supabase.from('Tickets')
+    .select()
+    .eq('id', params.id)
+    .single()
+
+	return {
+		title: `Helpdesk | ${ticket?.title || 'Ticket not found'}`
+	};
 }
 
-export async function generateStaticParams() {
-  const res = await fetch('http://localhost:4000/tickets')
-  const tickets: Ticket[] = await res.json()
- 
-  return tickets.map((ticket) => ({
-    id: ticket.id
-  }))
-}
-
-// Define the type for the id parameter
 async function getTicket(id: string) {
-  const res = await fetch(`http://localhost:4000/tickets/${id}`, {
-    next: {
-      revalidate: 60
-    }
-  })
+  const supabase = createServerComponentClient({ cookies });
 
-  if (!res.ok) {
-    notFound()
+  // Convert id to integer
+  const numericId = parseInt(id, 10);
+
+  const { data, error } = await supabase.from('Tickets')
+    .select()
+    .eq('id', numericId)
+    .single();
+
+  if (!data) {
+    notFound();
+    return null;  // Handle null data scenario
   }
 
-  return res.json()
+  return data;  // Directly return the data
 }
 
 type TicketDetailsProps = {
-  params: {
-    id: string;
-  };
-}
+	params: {
+		id: string;
+	};
+};
 
 export default async function TicketDetails({ params }: TicketDetailsProps) {
-  const ticket = await getTicket(params.id)
+	const ticket = await getTicket(params.id);
 
-  return (
-    <main>
-      <nav>
-        <h2>Ticket Details</h2>
-      </nav>
-      <div className="card">
-        <h3>{ticket.title}</h3>
-        <small>Created by {ticket.user_email}</small>
-        <p>{ticket.body}</p>
-        <div className={`pill ${ticket.priority}`}>
-          {ticket.priority} priority
-        </div>
-      </div>
-    </main>
-  )
+	return (
+		<main>
+			<nav>
+				<h2>Ticket Details</h2>
+			</nav>
+			<div className="card">
+				<h3>{ticket.title}</h3>
+				<small>Created by {ticket.user_email}</small>
+				<p>{ticket.body}</p>
+				<div className={`pill ${ticket.priority}`}>{ticket.priority} priority</div>
+			</div>
+		</main>
+	);
 }

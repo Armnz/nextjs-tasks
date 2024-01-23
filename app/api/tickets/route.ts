@@ -1,28 +1,33 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 
-export const dynamic = 'force-dynamic';
+export async function POST(request: any) {
+	const ticket = await request.json()
 
-export async function GET() {
-	const res = await fetch(`http://localhost:4000/tickets`);
-	const tickets = await res.json();
+	// get supabase instance
+	const supabase = createRouteHandlerClient({ cookies });
 
-	return NextResponse.json(tickets, {
-		status: 200,
-	});
-}
+	// get current user session
+	const {
+		data: { session },
+	} = await supabase.auth.getSession();
 
-export async function POST(request) {
-	const ticket = await request.json();
+	if (!session) {
+		// Handle the case where session is null
+		return NextResponse.json({ error: 'No session found' }, { status: 401 });
+	}
 
-	const res = await fetch('http://localhost:4000/tickets', {
-		method: "POST",
-		headers: {"Content-Type": "application/json"},
-		body: JSON.stringify(ticket)
-	})
+  const { data, error } = await supabase
+  .from('Tickets')
+  .insert({
+		...ticket,
+    user_email: session.user.email,
+  })
+  .select()
+  .single()
 
-	const newTicket = await res.json();
+  console.log(data, error);
 
-	return NextResponse.json(newTicket, {
-		status: 201,
-	})
+	return NextResponse.json({ data, error });
 }
