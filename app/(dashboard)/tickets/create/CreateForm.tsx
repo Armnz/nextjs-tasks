@@ -15,12 +15,12 @@ export default function CreateForm() {
     e.preventDefault()
     setIsLoading(true)
 
-    const newTicket = { title, body, priority, user_email: 'mario@mario.com' }
+    const ticket = { title, body, priority, user_email: 'mario@mario.com' }
 
     const res = await fetch('http://localhost:4000/tickets', {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(newTicket)
+      body: JSON.stringify(ticket)
     })
 
     if (res.status === 201) {
