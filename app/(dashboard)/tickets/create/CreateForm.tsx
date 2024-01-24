@@ -22,8 +22,6 @@ export default function CreateForm() {
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(newTicket),
 		});
-
-		console.log(res);
     
 		const json = await res.json();
 
@@ -34,7 +32,6 @@ export default function CreateForm() {
 			router.refresh();
 			router.push('/tickets');
 		}
-    console.log('data', json.data)
 	};
 
 	return (
